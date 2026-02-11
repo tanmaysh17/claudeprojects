@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>2048</title>
+  <title>DBZ 2048 - Power Up!</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+
     * {
       margin: 0;
       padding: 0;
@@ -12,34 +14,86 @@
     }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #faf8ef;
+      font-family: 'Bangers', 'Segoe UI', sans-serif;
+      background: #1a0a2e;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
       touch-action: none;
       user-select: none;
+      transition: background 0.8s ease;
+      overflow: hidden;
+    }
+
+    /* Background levels */
+    body.bg-earth {
+      background: linear-gradient(135deg, #1a472a 0%, #2d5016 50%, #4a7c23 100%);
+    }
+    body.bg-namek {
+      background: linear-gradient(135deg, #0a3d2e 0%, #1a6b4a 50%, #0d4f3c 100%);
+    }
+    body.bg-saiyan {
+      background: linear-gradient(135deg, #2e1a00 0%, #5c3400 50%, #8b4513 100%);
+    }
+    body.bg-chamber {
+      background: linear-gradient(135deg, #e8e0d0 0%, #f5f0e0 50%, #fff8e7 100%);
+    }
+    body.bg-ssj {
+      background: linear-gradient(135deg, #3d2b00 0%, #6b4e00 30%, #c8a000 70%, #ffd700 100%);
+    }
+    body.bg-ssj2 {
+      background: linear-gradient(135deg, #1a0033 0%, #3300aa 30%, #0044ff 70%, #00ccff 100%);
+    }
+    body.bg-ssj3 {
+      background: linear-gradient(135deg, #2a0a00 0%, #661a00 30%, #cc3300 70%, #ff6600 100%);
+    }
+    body.bg-god {
+      background: linear-gradient(135deg, #330011 0%, #990033 30%, #ff0055 70%, #ff4488 100%);
+    }
+    body.bg-blue {
+      background: linear-gradient(135deg, #000833 0%, #001166 30%, #0033cc 70%, #0088ff 100%);
+    }
+    body.bg-ultra {
+      background: linear-gradient(135deg, #0a0a2e 0%, #1a1a5e 20%, #c0c0c0 50%, #e8e8ff 80%, #ffffff 100%);
+      animation: ultraPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes ultraPulse {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.15); }
     }
 
     .container {
       width: 100%;
       max-width: 500px;
       padding: 16px;
+      position: relative;
+      z-index: 1;
     }
 
     .header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     .title {
-      font-size: 64px;
+      font-size: 42px;
       font-weight: bold;
-      color: #776e65;
+      color: #ff6600;
       line-height: 1;
+      text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 0 3px 6px rgba(255, 102, 0, 0.5);
+      letter-spacing: 2px;
+    }
+
+    .title .sub {
+      display: block;
+      font-size: 18px;
+      color: #ffd700;
+      text-shadow: 1px 1px 0 #000;
+      letter-spacing: 4px;
     }
 
     .scores {
@@ -48,128 +102,241 @@
     }
 
     .score-box {
-      background: #bbada0;
+      background: rgba(0, 0, 0, 0.6);
+      border: 2px solid #ff6600;
       border-radius: 6px;
-      padding: 8px 16px;
+      padding: 6px 14px;
       text-align: center;
       min-width: 80px;
     }
 
     .score-box .label {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: bold;
-      color: #eee4da;
+      color: #ffd700;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 2px;
     }
 
     .score-box .value {
       font-size: 22px;
       font-weight: bold;
       color: #fff;
+      text-shadow: 0 0 8px rgba(255, 102, 0, 0.6);
     }
 
     .controls {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     .subtitle {
-      color: #776e65;
-      font-size: 16px;
+      color: #ffd700;
+      font-size: 15px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+      letter-spacing: 1px;
     }
 
     .new-game-btn {
-      background: #8f7a66;
-      color: #f9f6f2;
-      border: none;
+      background: linear-gradient(180deg, #ff6600, #cc4400);
+      color: #fff;
+      border: 2px solid #ffd700;
       border-radius: 6px;
-      padding: 10px 20px;
+      padding: 8px 18px;
       font-size: 16px;
       font-weight: bold;
+      font-family: 'Bangers', sans-serif;
       cursor: pointer;
-      transition: background 0.15s;
+      letter-spacing: 2px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      transition: transform 0.15s, box-shadow 0.15s;
     }
 
     .new-game-btn:hover {
-      background: #9f8b77;
+      transform: scale(1.05);
+      box-shadow: 0 0 16px rgba(255, 102, 0, 0.6);
     }
 
     .board {
-      background: #bbada0;
+      background: rgba(0, 0, 0, 0.5);
+      border: 3px solid #ff6600;
       border-radius: 8px;
-      padding: 12px;
+      padding: 10px;
       position: relative;
+      box-shadow: 0 0 30px rgba(255, 102, 0, 0.3), inset 0 0 20px rgba(0,0,0,0.3);
     }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
+      gap: 10px;
     }
 
     .cell {
-      background: rgba(238, 228, 218, 0.35);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 102, 0, 0.2);
       border-radius: 6px;
       aspect-ratio: 1;
     }
 
     .tiles-container {
       position: absolute;
-      top: 12px;
-      left: 12px;
-      right: 12px;
-      bottom: 12px;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
     }
 
     .tile {
       position: absolute;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       font-weight: bold;
       border-radius: 6px;
       transition: top 0.12s ease, left 0.12s ease;
+      overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+
+    .tile .emoji {
+      font-size: inherit;
+      line-height: 1;
+      filter: none;
+    }
+
+    .tile .name {
+      font-size: 0.3em;
+      line-height: 1;
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: 'Bangers', sans-serif;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90%;
     }
 
     .tile.new {
-      animation: appear 0.2s ease;
+      animation: appear 0.25s ease;
     }
 
     .tile.merged {
-      animation: pop 0.2s ease;
+      animation: powerUp 0.3s ease;
     }
 
     @keyframes appear {
       0% { transform: scale(0); opacity: 0; }
+      60% { transform: scale(1.1); }
       100% { transform: scale(1); opacity: 1; }
     }
 
-    @keyframes pop {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.15); }
-      100% { transform: scale(1); }
+    @keyframes powerUp {
+      0% { transform: scale(1); filter: brightness(1); }
+      40% { transform: scale(1.25); filter: brightness(1.8); }
+      100% { transform: scale(1); filter: brightness(1); }
     }
 
-    .tile-2    { background: #eee4da; color: #776e65; }
-    .tile-4    { background: #ede0c8; color: #776e65; }
-    .tile-8    { background: #f2b179; color: #f9f6f2; }
-    .tile-16   { background: #f59563; color: #f9f6f2; }
-    .tile-32   { background: #f67c5f; color: #f9f6f2; }
-    .tile-64   { background: #f65e3b; color: #f9f6f2; }
-    .tile-128  { background: #edcf72; color: #f9f6f2; }
-    .tile-256  { background: #edcc61; color: #f9f6f2; }
-    .tile-512  { background: #edc850; color: #f9f6f2; }
-    .tile-1024 { background: #edc53f; color: #f9f6f2; }
-    .tile-2048 { background: #edc22e; color: #f9f6f2; }
-    .tile-super { background: #3c3a32; color: #f9f6f2; }
+    /* Tile themes - DBZ transformation chain */
+    .tile-2 {
+      background: linear-gradient(135deg, #5c9e31, #3d7a1c);
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      border-color: #7bc043;
+    }
+    .tile-4 {
+      background: linear-gradient(135deg, #e8a030, #cc7700);
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      border-color: #ffbb33;
+    }
+    .tile-8 {
+      background: linear-gradient(135deg, #4a8040, #2d6b1a);
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      border-color: #66bb6a;
+    }
+    .tile-16 {
+      background: linear-gradient(135deg, #2244aa, #1a2d7a);
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      border-color: #4488ff;
+    }
+    .tile-32 {
+      background: linear-gradient(135deg, #8844aa, #5c2d82);
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      border-color: #bb66dd;
+    }
+    .tile-64 {
+      background: linear-gradient(135deg, #dd6600, #aa4400);
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      border-color: #ff8833;
+    }
+    .tile-128 {
+      background: linear-gradient(135deg, #ccaa00, #aa8800);
+      color: #fff;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+      border-color: #ffd700;
+      box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+    }
+    .tile-256 {
+      background: linear-gradient(135deg, #0044dd, #0022aa);
+      color: #fff;
+      text-shadow: 0 0 8px rgba(100, 180, 255, 0.8);
+      border-color: #44aaff;
+      box-shadow: 0 0 20px rgba(0, 100, 255, 0.6);
+      animation: kameTile 1.5s ease-in-out infinite;
+    }
+    .tile-512 {
+      background: linear-gradient(135deg, #cc2200, #881100);
+      color: #fff;
+      text-shadow: 0 0 8px rgba(255, 150, 50, 0.8);
+      border-color: #ff4422;
+      box-shadow: 0 0 16px rgba(255, 50, 0, 0.5);
+    }
+    .tile-1024 {
+      background: linear-gradient(135deg, #cc0044, #880022);
+      color: #fff;
+      text-shadow: 0 0 8px rgba(255, 100, 150, 0.8);
+      border-color: #ff4488;
+      box-shadow: 0 0 20px rgba(255, 0, 80, 0.5);
+    }
+    .tile-2048 {
+      background: linear-gradient(135deg, #c0c0ff, #8888cc, #e0e0ff);
+      color: #1a1a4e;
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+      border-color: #fff;
+      box-shadow: 0 0 30px rgba(200, 200, 255, 0.8), 0 0 60px rgba(200, 200, 255, 0.4);
+      animation: ultraTile 2s ease-in-out infinite;
+    }
+    .tile-super {
+      background: linear-gradient(135deg, #ffd700, #ffaa00, #ff6600);
+      color: #fff;
+      text-shadow: 0 0 10px rgba(255, 200, 0, 0.8);
+      border-color: #ffd700;
+      box-shadow: 0 0 25px rgba(255, 200, 0, 0.6);
+    }
+
+    @keyframes kameTile {
+      0%, 100% { box-shadow: 0 0 20px rgba(0, 100, 255, 0.6); }
+      50% { box-shadow: 0 0 35px rgba(0, 150, 255, 0.9); }
+    }
+
+    @keyframes ultraTile {
+      0%, 100% { box-shadow: 0 0 30px rgba(200, 200, 255, 0.8); filter: brightness(1); }
+      50% { box-shadow: 0 0 50px rgba(220, 220, 255, 1); filter: brightness(1.2); }
+    }
 
     .overlay {
       position: absolute;
       inset: 0;
-      background: rgba(238, 228, 218, 0.73);
+      background: rgba(0, 0, 0, 0.8);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -178,6 +345,7 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.3s;
+      z-index: 10;
     }
 
     .overlay.active {
@@ -186,10 +354,12 @@
     }
 
     .overlay-message {
-      font-size: 48px;
+      font-size: 42px;
       font-weight: bold;
-      color: #776e65;
+      color: #ff6600;
+      text-shadow: 2px 2px 0 #000, 0 0 20px rgba(255, 102, 0, 0.8);
       margin-bottom: 16px;
+      letter-spacing: 3px;
     }
 
     .overlay .new-game-btn {
@@ -198,31 +368,134 @@
 
     .instructions {
       text-align: center;
-      color: #776e65;
-      margin-top: 16px;
+      color: rgba(255, 200, 100, 0.7);
+      margin-top: 14px;
       font-size: 14px;
       line-height: 1.6;
+      letter-spacing: 1px;
+    }
+
+    /* Kamehameha flash */
+    .kame-flash {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .kame-flash.active {
+      animation: kamehameha 1.6s ease-out forwards;
+    }
+
+    .kame-beam {
+      position: absolute;
+      top: 50%;
+      left: -100%;
+      width: 300%;
+      height: 120px;
+      transform: translateY(-50%);
+      background: radial-gradient(ellipse at center, #ffffff 0%, #88ccff 20%, #0066ff 40%, #0033cc 60%, transparent 70%);
+      filter: blur(3px);
+      opacity: 0;
+    }
+
+    .kame-flash.active .kame-beam {
+      animation: beamShoot 1.2s 0.2s ease-out forwards;
+    }
+
+    .kame-glow {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(100, 180, 255, 0.8), rgba(0, 50, 200, 0.4), transparent 70%);
+      opacity: 0;
+    }
+
+    .kame-flash.active .kame-glow {
+      animation: kameGlow 1.6s ease-out forwards;
+    }
+
+    .kame-text {
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-family: 'Bangers', sans-serif;
+      font-size: 64px;
+      color: #fff;
+      text-shadow: 0 0 20px #0088ff, 0 0 40px #0044cc, 2px 2px 0 #001166;
+      letter-spacing: 8px;
+      white-space: nowrap;
+      opacity: 0;
+    }
+
+    .kame-flash.active .kame-text {
+      animation: kameText 1.4s 0.1s ease-out forwards;
+    }
+
+    @keyframes kamehameha {
+      0% { opacity: 1; }
+      70% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes kameGlow {
+      0% { opacity: 0; }
+      15% { opacity: 1; }
+      60% { opacity: 0.8; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes beamShoot {
+      0% { left: -100%; opacity: 0; }
+      10% { opacity: 1; }
+      50% { left: -50%; opacity: 1; }
+      100% { left: 100%; opacity: 0; }
+    }
+
+    @keyframes kameText {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      20% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+      40% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      70% { opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    }
+
+    /* Screen shake for merges on high tiles */
+    .shake {
+      animation: shake 0.3s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-4px, 2px); }
+      40% { transform: translate(4px, -2px); }
+      60% { transform: translate(-3px, 3px); }
+      80% { transform: translate(3px, -1px); }
     }
   </style>
 </head>
-<body>
-  <div class="container">
+<body class="bg-earth">
+  <div class="container" id="container">
     <div class="header">
-      <div class="title">2048</div>
+      <div class="title">
+        DBZ 2048
+        <span class="sub">Power Up!</span>
+      </div>
       <div class="scores">
         <div class="score-box">
-          <div class="label">Score</div>
+          <div class="label">Power</div>
           <div class="value" id="score">0</div>
         </div>
         <div class="score-box">
-          <div class="label">Best</div>
+          <div class="label">Max</div>
           <div class="value" id="best">0</div>
         </div>
       </div>
     </div>
     <div class="controls">
-      <div class="subtitle">Join the tiles, get to <b>2048!</b></div>
-      <button class="new-game-btn" id="new-game-btn">New Game</button>
+      <div class="subtitle">Fuse warriors, reach Ultra Instinct!</div>
+      <button class="new-game-btn" id="new-game-btn">Fight!</button>
     </div>
     <div class="board" id="board">
       <div class="grid">
@@ -234,13 +507,20 @@
       <div class="tiles-container" id="tiles-container"></div>
       <div class="overlay" id="overlay">
         <div class="overlay-message" id="overlay-message"></div>
-        <button class="new-game-btn" id="overlay-btn">Try Again</button>
+        <button class="new-game-btn" id="overlay-btn">Fight Again!</button>
       </div>
     </div>
     <div class="instructions">
-      Use <b>arrow keys</b> or <b>swipe</b> to move tiles.<br>
-      Tiles with the same number merge into one!
+      Use <b>arrow keys</b> or <b>swipe</b> to move warriors.<br>
+      Fuse same warriors to power up!
     </div>
+  </div>
+
+  <!-- Kamehameha overlay -->
+  <div class="kame-flash" id="kame-flash">
+    <div class="kame-glow"></div>
+    <div class="kame-beam"></div>
+    <div class="kame-text">KAMEHAMEHA!!!</div>
   </div>
 
   <script>
@@ -253,21 +533,67 @@
     const tilesContainer = document.getElementById('tiles-container');
     const overlay = document.getElementById('overlay');
     const overlayMessage = document.getElementById('overlay-message');
+    const container = document.getElementById('container');
+    const kameFlash = document.getElementById('kame-flash');
 
-    best = parseInt(localStorage.getItem('2048-best')) || 0;
+    best = parseInt(localStorage.getItem('dbz2048-best')) || 0;
     bestEl.textContent = best;
 
-    // grid[r][c] stores a tile ID (or 0 for empty)
-    // tileMap: id -> { id, r, c, value, el }
+    // DBZ character map
+    const DBZ = {
+      2:    { emoji: '\u{1F466}', name: 'Kid Goku' },
+      4:    { emoji: '\u{1F468}\u{200D}\u{1F9B2}', name: 'Krillin' },
+      8:    { emoji: '\u{1F7E2}', name: 'Piccolo' },
+      16:   { emoji: '\u{1F608}', name: 'Vegeta' },
+      32:   { emoji: '\u{1F4AA}', name: 'Gohan' },
+      64:   { emoji: '\u{270A}',  name: 'Goku' },
+      128:  { emoji: '\u{1F31F}', name: 'SSJ Goku' },
+      256:  { emoji: '\u{1F525}', name: 'SSJ2 Goku' },
+      512:  { emoji: '\u{1F4A5}', name: 'SSJ3 Goku' },
+      1024: { emoji: '\u{2764}\u{FE0F}\u{200D}\u{1F525}', name: 'SSG Goku' },
+      2048: { emoji: '\u{1F30C}', name: 'Ultra Instinct' },
+    };
+
+    const SUPER_CHAR = { emoji: '\u{1F451}', name: 'Zeno' };
+
+    // Background levels based on max tile
+    const BG_MAP = {
+      2: 'bg-earth', 4: 'bg-earth', 8: 'bg-namek', 16: 'bg-saiyan',
+      32: 'bg-saiyan', 64: 'bg-chamber', 128: 'bg-ssj', 256: 'bg-ssj2',
+      512: 'bg-ssj3', 1024: 'bg-god', 2048: 'bg-ultra',
+    };
+
+    function getMaxTileValue() {
+      let max = 0;
+      for (const [, t] of tileMap) {
+        if (t.value > max) max = t.value;
+      }
+      return max;
+    }
+
+    function updateBackground() {
+      const max = getMaxTileValue();
+      // Find the highest matching bg
+      let bg = 'bg-earth';
+      const levels = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048];
+      for (const lv of levels) {
+        if (max >= lv && BG_MAP[lv]) bg = BG_MAP[lv];
+      }
+      document.body.className = bg;
+    }
+
+    function getCharInfo(value) {
+      return DBZ[value] || SUPER_CHAR;
+    }
 
     function calcTileSize() {
       const board = document.getElementById('board');
-      return (board.clientWidth - 24 - 36) / 4;
+      return (board.clientWidth - 20 - 30) / 4;
     }
 
     function positionTile(tile) {
       const size = calcTileSize();
-      const gap = 12;
+      const gap = 10;
       tile.el.style.top = tile.r * (size + gap) + 'px';
       tile.el.style.left = tile.c * (size + gap) + 'px';
     }
@@ -276,11 +602,13 @@
       const size = calcTileSize();
       const cls = tile.value <= 2048 ? `tile-${tile.value}` : 'tile-super';
       tile.el.className = `tile ${cls}`;
-      tile.el.textContent = tile.value;
+      const char = getCharInfo(tile.value);
+      const emojiSize = size * 0.4;
+      tile.el.innerHTML =
+        `<span class="emoji" style="font-size:${emojiSize}px">${char.emoji}</span>` +
+        `<span class="name">${char.name}</span>`;
       tile.el.style.width = size + 'px';
       tile.el.style.height = size + 'px';
-      const fontSize = tile.value >= 1024 ? size * 0.3 : tile.value >= 128 ? size * 0.38 : size * 0.45;
-      tile.el.style.fontSize = fontSize + 'px';
     }
 
     function createTileEl(tile, animate) {
@@ -318,15 +646,30 @@
       tilesContainer.innerHTML = '';
       scoreEl.textContent = '0';
       overlay.classList.remove('active');
+      document.body.className = 'bg-earth';
       spawnTile();
       spawnTile();
+    }
+
+    function fireKamehameha() {
+      kameFlash.classList.remove('active');
+      // Force reflow to restart animation
+      void kameFlash.offsetWidth;
+      kameFlash.classList.add('active');
+      setTimeout(() => kameFlash.classList.remove('active'), 1800);
+    }
+
+    function screenShake() {
+      container.classList.remove('shake');
+      void container.offsetWidth;
+      container.classList.add('shake');
+      setTimeout(() => container.classList.remove('shake'), 350);
     }
 
     function move(direction) {
       if (gameOver || moving) return;
       moving = true;
 
-      // Determine traversal direction
       let dr = 0, dc = 0;
       let rowOrder = [0, 1, 2, 3], colOrder = [0, 1, 2, 3];
       if (direction === 'left')  { dc = -1; }
@@ -335,9 +678,11 @@
       if (direction === 'down')  { dr = 1;  rowOrder = [3, 2, 1, 0]; }
 
       let moved = false;
-      const mergedIds = [];    // tiles that received a merge (to animate pop)
-      const removedIds = [];   // tiles consumed by a merge (to delete after slide)
-      const mergedCells = new Set(); // prevent double-merge in one move
+      const mergedIds = [];
+      const removedIds = [];
+      const mergedCells = new Set();
+      let madeKame = false;
+      let hadBigMerge = false;
 
       for (const r of rowOrder) {
         for (const c of colOrder) {
@@ -347,7 +692,6 @@
           const tile = tileMap.get(id);
           let nr = r, nc = c;
 
-          // Slide as far as possible
           while (true) {
             const nextR = nr + dr;
             const nextC = nc + dc;
@@ -375,17 +719,19 @@
 
             const existingId = grid[nr][nc];
             if (existingId !== 0) {
-              // Merge: tile absorbs existingTile
               const existingTile = tileMap.get(existingId);
               tile.value *= 2;
               score += tile.value;
 
-              // Slide the consumed tile to the merge position (it will be removed)
+              // Check for Kamehameha (reaching 256)
+              if (tile.value === 256) madeKame = true;
+              // Big merge shake for 128+
+              if (tile.value >= 128) hadBigMerge = true;
+
               existingTile.r = nr;
               existingTile.c = nc;
               positionTile(existingTile);
               removedIds.push(existingId);
-
               mergedIds.push(id);
             }
 
@@ -404,16 +750,13 @@
 
       updateScore();
 
-      // After slide transition completes, clean up merges and spawn
       setTimeout(() => {
-        // Remove consumed tiles from DOM
         for (const rid of removedIds) {
           const t = tileMap.get(rid);
           if (t && t.el) t.el.remove();
           tileMap.delete(rid);
         }
 
-        // Update merged tiles' appearance + pop animation
         for (const mid of mergedIds) {
           const t = tileMap.get(mid);
           if (t) {
@@ -422,24 +765,26 @@
           }
         }
 
-        // Spawn new tile
         spawnTile();
+        updateBackground();
 
-        // Check win
+        // Effects
+        if (madeKame) fireKamehameha();
+        if (hadBigMerge) screenShake();
+
         if (!won) {
           for (const [, t] of tileMap) {
             if (t.value === 2048) {
               won = true;
-              setTimeout(() => showOverlay('You Win!'), 200);
+              setTimeout(() => showOverlay('ULTRA INSTINCT!'), 200);
               break;
             }
           }
         }
 
-        // Check game over
         if (!won && !canMove()) {
           gameOver = true;
-          setTimeout(() => showOverlay('Game Over!'), 200);
+          setTimeout(() => showOverlay('Defeated!'), 200);
         }
 
         moving = false;
@@ -469,7 +814,7 @@
       if (score > best) {
         best = score;
         bestEl.textContent = best;
-        localStorage.setItem('2048-best', best);
+        localStorage.setItem('dbz2048-best', best);
       }
     }
 
@@ -478,7 +823,6 @@
       overlay.classList.add('active');
     }
 
-    // Reposition all tiles on resize
     function handleResize() {
       for (const [, tile] of tileMap) {
         styleTile(tile);
@@ -486,7 +830,6 @@
       }
     }
 
-    // Keyboard controls
     document.addEventListener('keydown', (e) => {
       const map = {
         ArrowLeft: 'left', ArrowRight: 'right',
@@ -498,7 +841,6 @@
       }
     });
 
-    // Touch/swipe controls
     let touchStartX, touchStartY;
 
     document.addEventListener('touchstart', (e) => {
@@ -522,13 +864,11 @@
       touchStartX = touchStartY = null;
     }, { passive: true });
 
-    // Buttons
     document.getElementById('new-game-btn').addEventListener('click', init);
     document.getElementById('overlay-btn').addEventListener('click', init);
 
     window.addEventListener('resize', handleResize);
 
-    // Start
     init();
   </script>
 </body>
