@@ -245,7 +245,8 @@
 
   <script>
     const SIZE = 4;
-    let grid, score, best, won, gameOver, moving;
+    const TRANSITION_MS = 120;
+    let grid, tileMap, nextTileId, score, best, won, gameOver, moving;
 
     const scoreEl = document.getElementById('score');
     const bestEl = document.getElementById('best');
@@ -256,171 +257,209 @@
     best = parseInt(localStorage.getItem('2048-best')) || 0;
     bestEl.textContent = best;
 
+    // grid[r][c] stores a tile ID (or 0 for empty)
+    // tileMap: id -> { id, r, c, value, el }
+
+    function calcTileSize() {
+      const board = document.getElementById('board');
+      return (board.clientWidth - 24 - 36) / 4;
+    }
+
+    function positionTile(tile) {
+      const size = calcTileSize();
+      const gap = 12;
+      tile.el.style.top = tile.r * (size + gap) + 'px';
+      tile.el.style.left = tile.c * (size + gap) + 'px';
+    }
+
+    function styleTile(tile) {
+      const size = calcTileSize();
+      const cls = tile.value <= 2048 ? `tile-${tile.value}` : 'tile-super';
+      tile.el.className = `tile ${cls}`;
+      tile.el.textContent = tile.value;
+      tile.el.style.width = size + 'px';
+      tile.el.style.height = size + 'px';
+      const fontSize = tile.value >= 1024 ? size * 0.3 : tile.value >= 128 ? size * 0.38 : size * 0.45;
+      tile.el.style.fontSize = fontSize + 'px';
+    }
+
+    function createTileEl(tile, animate) {
+      const el = document.createElement('div');
+      tile.el = el;
+      styleTile(tile);
+      positionTile(tile);
+      if (animate) el.classList.add('new');
+      tilesContainer.appendChild(el);
+    }
+
+    function spawnTile() {
+      const empty = [];
+      for (let r = 0; r < SIZE; r++)
+        for (let c = 0; c < SIZE; c++)
+          if (grid[r][c] === 0) empty.push({ r, c });
+      if (empty.length === 0) return;
+      const { r, c } = empty[Math.floor(Math.random() * empty.length)];
+      const value = Math.random() < 0.9 ? 2 : 4;
+      const id = ++nextTileId;
+      const tile = { id, r, c, value, el: null };
+      grid[r][c] = id;
+      tileMap.set(id, tile);
+      createTileEl(tile, true);
+    }
+
     function init() {
       grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+      tileMap = new Map();
+      nextTileId = 0;
       score = 0;
       won = false;
       gameOver = false;
       moving = false;
+      tilesContainer.innerHTML = '';
       scoreEl.textContent = '0';
       overlay.classList.remove('active');
       spawnTile();
       spawnTile();
-      render();
-    }
-
-    function emptyCells() {
-      const cells = [];
-      for (let r = 0; r < SIZE; r++)
-        for (let c = 0; c < SIZE; c++)
-          if (grid[r][c] === 0) cells.push({ r, c });
-      return cells;
-    }
-
-    function spawnTile() {
-      const empty = emptyCells();
-      if (empty.length === 0) return;
-      const { r, c } = empty[Math.floor(Math.random() * empty.length)];
-      grid[r][c] = Math.random() < 0.9 ? 2 : 4;
-      return { r, c };
-    }
-
-    function tileSize() {
-      const board = document.getElementById('board');
-      const boardWidth = board.clientWidth - 24; // padding
-      return (boardWidth - 36) / 4; // gap
-    }
-
-    function render(animations) {
-      tilesContainer.innerHTML = '';
-      const size = tileSize();
-      const gap = 12;
-
-      for (let r = 0; r < SIZE; r++) {
-        for (let c = 0; c < SIZE; c++) {
-          const val = grid[r][c];
-          if (val === 0) continue;
-
-          const tile = document.createElement('div');
-          const cls = val <= 2048 ? `tile-${val}` : 'tile-super';
-          tile.className = `tile ${cls}`;
-
-          const fontSize = val >= 1024 ? size * 0.3 : val >= 128 ? size * 0.38 : size * 0.45;
-          tile.style.width = size + 'px';
-          tile.style.height = size + 'px';
-          tile.style.fontSize = fontSize + 'px';
-          tile.style.top = r * (size + gap) + 'px';
-          tile.style.left = c * (size + gap) + 'px';
-          tile.textContent = val;
-
-          if (animations) {
-            const key = `${r},${c}`;
-            if (animations.spawned && animations.spawned.has(key)) {
-              tile.classList.add('new');
-            }
-            if (animations.merged && animations.merged.has(key)) {
-              tile.classList.add('merged');
-            }
-          }
-
-          tilesContainer.appendChild(tile);
-        }
-      }
-    }
-
-    function slide(row) {
-      let arr = row.filter(v => v !== 0);
-      const merged = [];
-      for (let i = 0; i < arr.length - 1; i++) {
-        if (arr[i] === arr[i + 1]) {
-          arr[i] *= 2;
-          score += arr[i];
-          merged.push(i);
-          arr[i + 1] = 0;
-        }
-      }
-      arr = arr.filter(v => v !== 0);
-      while (arr.length < SIZE) arr.push(0);
-      return { result: arr, merged };
     }
 
     function move(direction) {
       if (gameOver || moving) return;
       moving = true;
 
+      // Determine traversal direction
+      let dr = 0, dc = 0;
+      let rowOrder = [0, 1, 2, 3], colOrder = [0, 1, 2, 3];
+      if (direction === 'left')  { dc = -1; }
+      if (direction === 'right') { dc = 1;  colOrder = [3, 2, 1, 0]; }
+      if (direction === 'up')    { dr = -1; }
+      if (direction === 'down')  { dr = 1;  rowOrder = [3, 2, 1, 0]; }
+
       let moved = false;
-      const mergedCells = new Set();
+      const mergedIds = [];    // tiles that received a merge (to animate pop)
+      const removedIds = [];   // tiles consumed by a merge (to delete after slide)
+      const mergedCells = new Set(); // prevent double-merge in one move
 
-      const rotateGrid = (times) => {
-        for (let t = 0; t < times; t++) {
-          const n = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
-          for (let r = 0; r < SIZE; r++)
-            for (let c = 0; c < SIZE; c++)
-              n[c][SIZE - 1 - r] = grid[r][c];
-          grid = n;
-        }
-      };
+      for (const r of rowOrder) {
+        for (const c of colOrder) {
+          const id = grid[r][c];
+          if (id === 0) continue;
 
-      // Normalize: rotate so that move is always "left"
-      const rotations = { left: 0, up: 1, right: 2, down: 3 };
-      const rot = rotations[direction];
-      rotateGrid(rot);
+          const tile = tileMap.get(id);
+          let nr = r, nc = c;
 
-      for (let r = 0; r < SIZE; r++) {
-        const old = [...grid[r]];
-        const { result } = slide(grid[r]);
-        grid[r] = result;
-        for (let c = 0; c < SIZE; c++) {
-          if (old[c] !== result[c]) moved = true;
+          // Slide as far as possible
+          while (true) {
+            const nextR = nr + dr;
+            const nextC = nc + dc;
+            if (nextR < 0 || nextR >= SIZE || nextC < 0 || nextC >= SIZE) break;
+
+            const targetId = grid[nextR][nextC];
+            if (targetId === 0) {
+              nr = nextR;
+              nc = nextC;
+            } else {
+              const targetTile = tileMap.get(targetId);
+              const cellKey = `${nextR},${nextC}`;
+              if (targetTile && targetTile.value === tile.value && !mergedCells.has(cellKey)) {
+                nr = nextR;
+                nc = nextC;
+                mergedCells.add(cellKey);
+              }
+              break;
+            }
+          }
+
+          if (nr !== r || nc !== c) {
+            moved = true;
+            grid[r][c] = 0;
+
+            const existingId = grid[nr][nc];
+            if (existingId !== 0) {
+              // Merge: tile absorbs existingTile
+              const existingTile = tileMap.get(existingId);
+              tile.value *= 2;
+              score += tile.value;
+
+              // Slide the consumed tile to the merge position (it will be removed)
+              existingTile.r = nr;
+              existingTile.c = nc;
+              positionTile(existingTile);
+              removedIds.push(existingId);
+
+              mergedIds.push(id);
+            }
+
+            grid[nr][nc] = id;
+            tile.r = nr;
+            tile.c = nc;
+            positionTile(tile);
+          }
         }
       }
 
-      // Rotate back
-      rotateGrid((4 - rot) % 4);
+      if (!moved) {
+        moving = false;
+        return;
+      }
 
-      // Track merges in the final grid for animation
-      // (simplified: mark cells that have values resulting from merges)
+      updateScore();
 
-      if (moved) {
-        const spawn = spawnTile();
-        const spawned = new Set();
-        if (spawn) spawned.add(`${spawn.r},${spawn.c}`);
+      // After slide transition completes, clean up merges and spawn
+      setTimeout(() => {
+        // Remove consumed tiles from DOM
+        for (const rid of removedIds) {
+          const t = tileMap.get(rid);
+          if (t && t.el) t.el.remove();
+          tileMap.delete(rid);
+        }
 
-        updateScore();
-        render({ spawned, merged: mergedCells });
+        // Update merged tiles' appearance + pop animation
+        for (const mid of mergedIds) {
+          const t = tileMap.get(mid);
+          if (t) {
+            styleTile(t);
+            t.el.classList.add('merged');
+          }
+        }
+
+        // Spawn new tile
+        spawnTile();
 
         // Check win
         if (!won) {
-          for (let r = 0; r < SIZE; r++) {
-            for (let c = 0; c < SIZE; c++) {
-              if (grid[r][c] === 2048) {
-                won = true;
-                setTimeout(() => showOverlay('You Win!'), 300);
-                break;
-              }
+          for (const [, t] of tileMap) {
+            if (t.value === 2048) {
+              won = true;
+              setTimeout(() => showOverlay('You Win!'), 200);
+              break;
             }
-            if (won) break;
           }
         }
 
         // Check game over
         if (!won && !canMove()) {
           gameOver = true;
-          setTimeout(() => showOverlay('Game Over!'), 300);
+          setTimeout(() => showOverlay('Game Over!'), 200);
         }
-      } else {
-        render();
-      }
 
-      setTimeout(() => { moving = false; }, 150);
+        moving = false;
+      }, TRANSITION_MS);
     }
 
     function canMove() {
       for (let r = 0; r < SIZE; r++)
         for (let c = 0; c < SIZE; c++) {
           if (grid[r][c] === 0) return true;
-          if (c < SIZE - 1 && grid[r][c] === grid[r][c + 1]) return true;
-          if (r < SIZE - 1 && grid[r][c] === grid[r + 1][c]) return true;
+          const tile = tileMap.get(grid[r][c]);
+          if (!tile) continue;
+          if (c < SIZE - 1) {
+            const right = tileMap.get(grid[r][c + 1]);
+            if (right && right.value === tile.value) return true;
+          }
+          if (r < SIZE - 1) {
+            const below = tileMap.get(grid[r + 1][c]);
+            if (below && below.value === tile.value) return true;
+          }
         }
       return false;
     }
@@ -437,6 +476,14 @@
     function showOverlay(msg) {
       overlayMessage.textContent = msg;
       overlay.classList.add('active');
+    }
+
+    // Reposition all tiles on resize
+    function handleResize() {
+      for (const [, tile] of tileMap) {
+        styleTile(tile);
+        positionTile(tile);
+      }
     }
 
     // Keyboard controls
@@ -479,8 +526,7 @@
     document.getElementById('new-game-btn').addEventListener('click', init);
     document.getElementById('overlay-btn').addEventListener('click', init);
 
-    // Handle resize
-    window.addEventListener('resize', () => render());
+    window.addEventListener('resize', handleResize);
 
     // Start
     init();
