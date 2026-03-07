@@ -22,3 +22,19 @@ streamlit run app.py
 ```
 
 Then open the local URL shown by Streamlit (typically `http://localhost:8501`).
+
+## GitHub authentication (CLI)
+
+If you need to create repositories from this environment, authenticate GitHub CLI first:
+
+```bash
+gh auth login --hostname github.com --web --git-protocol https
+gh auth status
+```
+
+If browser-based login is unavailable, use a personal access token:
+
+```bash
+export GH_TOKEN=<your_token>
+gh auth status
+```
